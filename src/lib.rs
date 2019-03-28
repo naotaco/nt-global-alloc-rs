@@ -8,31 +8,31 @@ use core::alloc::Layout;
 use core::ptr;
 
 pub struct NtGlobalAlloc {
-    pub head: u32,
-    pub end: u32,
+    pub base: u32,
+    pub size: u32,
 }
 
 unsafe impl Sync for NtGlobalAlloc {}
 
 unsafe impl GlobalAlloc for NtGlobalAlloc {
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
-        let allocated_size = core::ptr::read_volatile(self.head as *mut u32);
-        let offset = 0x100; // for header
+        let allocated_size = core::ptr::read_volatile(self.base as *mut u32);
+        let offset = 0x100; // for baseer
         let align = layout.align() as u32;
         let align_offset = match allocated_size % align {
             0 => 0,
             m => align - m,
         };
-        let pointer = self.head + allocated_size + offset + align_offset; // to return
+        let pointer = self.base + allocated_size + offset + align_offset; // to return
 
         // ensure to keep requested size.
-        if pointer + layout.size() as u32 > self.end {
+        if pointer + layout.size() as u32 > self.base + self.size {
             return ptr::null_mut();
         }
 
         // store next value
         core::ptr::write_volatile(
-            self.head as *mut u32,
+            self.base as *mut u32,
             allocated_size + (layout.size() as u32) + align_offset,
         );
 
@@ -50,7 +50,7 @@ unsafe impl GlobalAlloc for NtGlobalAlloc {
 
 impl NtGlobalAlloc {
     pub unsafe fn init(&mut self) {
-        let base = self.head;
+        let base = self.base;
         for i in 0..0x100 {
             core::ptr::write_volatile((base + i * 4) as *mut u32, 0);
         }
