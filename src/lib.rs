@@ -30,13 +30,6 @@ unsafe impl GlobalAlloc for NtGlobalAlloc {
             return ptr::null_mut();
         }
 
-        //        let align = layout.align() as u32;
-        //        let res = self.head % align;
-        // let start = match res {
-        //     0 => self.head + *allocated_size,
-        //     _ => self.head + align - res + *allocated_size,
-        // };
-
         // store next value
         core::ptr::write_volatile(
             self.head as *mut u32,
@@ -44,15 +37,6 @@ unsafe impl GlobalAlloc for NtGlobalAlloc {
         );
 
         pointer as *mut u8
-
-        // if start + align > self.end {
-        //     // a null pointer signal an Out Of Memory condition
-        //     ptr::null_mut()
-        // } else {
-        //     //            head = start + align;
-        //     ptr::write_bytes(start as *mut u8, 0, 4);
-        //     start as *mut u8
-        // }
     }
 
     unsafe fn dealloc(&self, _: *mut u8, _: Layout) {
