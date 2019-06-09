@@ -7,9 +7,18 @@ use core::alloc::GlobalAlloc;
 use core::alloc::Layout;
 use core::ptr;
 
+type Callback = fn(string: &str);
+
 pub struct NtGlobalAlloc {
     pub base: u32,
     pub size: u32,
+    pub debug_cb: Callback,
+}
+
+struct Record {
+    pub head: u32,
+    pub size: u32,
+    pub valid: bool,
 }
 
 unsafe impl Sync for NtGlobalAlloc {}
@@ -23,6 +32,7 @@ unsafe impl GlobalAlloc for NtGlobalAlloc {
             0 => 0,
             m => align - m,
         };
+
         let pointer = self.base + allocated_size + offset + align_offset; // to return
 
         // ensure to keep requested size.
@@ -42,6 +52,10 @@ unsafe impl GlobalAlloc for NtGlobalAlloc {
     unsafe fn dealloc(&self, _: *mut u8, _: Layout) {
         // this allocator never deallocates memory
     }
+
+    // unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+    //     ptr
+    // }
 
     // unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
     //     self.alloc(layout)
